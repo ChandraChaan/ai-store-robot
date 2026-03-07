@@ -1,16 +1,39 @@
-import cv2
+from ultralytics import YOLO
 
-# load pretrained human detection model
-hog = cv2.HOGDescriptor()
-hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+# load lightweight YOLO model
+model = YOLO("yolov8n.pt")
+
 
 def detect_people(frame):
+    """
+    Detect people using YOLO and return list of detections.
+    Each detection returns center coordinates and bounding box.
+    """
 
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    results = model(frame, verbose=False)
 
-    bodies, _ = hog.detectMultiScale(
-        frame,
-        winStride=(8,8)
-    )
+    detections = []
 
-    return len(bodies) > 0
+    for result in results:
+
+        if result.boxes is None:
+            continue
+
+        for box in result.boxes:
+
+            cls = int(box.cls[0])
+
+            # YOLO class 0 = person
+            if cls == 0:
+
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+
+                cx = int((x1 + x2) / 2)
+                cy = int((y1 + y2) / 2)
+
+                detections.append({
+                    "bbox": (x1, y1, x2, y2),
+                    "center": (cx, cy)
+                })
+
+    return detections
