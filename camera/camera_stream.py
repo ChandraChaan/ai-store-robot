@@ -1,63 +1,106 @@
 import cv2
-import time
-from vision.person_detection import detect_people
+from ultralytics import YOLO
 from voice.text_to_speech import speak
-
 
 def start_camera():
 
+    model = YOLO("yolov8n.pt")
+
     cap = cv2.VideoCapture("http://192.168.43.196:4747/video")
 
-    previous_center = None
-    last_event_time = 0
-    cooldown = 4
+    previous_positions = {}
+    crossed_ids = {}
+
+    LINE_Y = 450
 
     while True:
 
         ret, frame = cap.read()
-
         if not ret:
+            print("Camera not working")
             break
 
         frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
-        detections = detect_people(frame)
+        height, width = frame.shape[:2]
 
-        current_time = time.time()
+        # draw entrance line
+        cv2.line(frame,(0,LINE_Y),(width,LINE_Y),(0,0,255),3)
 
-        if len(detections) > 0:
+        results = model.track(frame, persist=True, classes=[0])
 
-            person = detections[0]
+        if results[0].boxes is not None:
 
-            x1, y1, x2, y2 = person["bbox"]
-            cx, cy = person["center"]
+            boxes = results[0].boxes.xyxy.cpu().numpy()
+            ids = results[0].boxes.id
+            classes = results[0].boxes.cls.cpu().numpy()
+            confidences = results[0].boxes.conf.cpu().numpy()
 
-            # draw detection box
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            if ids is not None:
 
-            cv2.circle(frame, (cx, cy), 5, (0, 0, 255), -1)
+                ids = ids.cpu().numpy()
 
-            if previous_center is not None:
+                for box, track_id, cls, conf in zip(boxes, ids, classes, confidences):
 
-                movement = cy - previous_center
+                    if conf < 0.4:
+                        continue
 
-                # entering store
-                if movement > 25 and current_time - last_event_time > cooldown:
-                    print("Customer entering")
-                    speak("Hello welcome to the store")
-                    last_event_time = current_time
+                    if int(cls) != 0:
+                        continue
 
-                # leaving store
-                if movement < -25 and current_time - last_event_time > cooldown:
-                    print("Customer leaving")
-                    speak("Thank you, bye")
-                    last_event_time = current_time
+                    x1, y1, x2, y2 = map(int, box)
 
-            previous_center = cy
+                    cx = int((x1 + x2) / 2)
+                    cy = int((y1 + y2) / 2)
 
-        cv2.imshow("AI Store Camera", frame)
+                    # draw box
+                    cv2.rectangle(frame,(x1,y1),(x2,y2),(0,255,0),2)
 
-        if cv2.waitKey(1) & 0xFF == ord("q"):
+                    # draw center
+                    cv2.circle(frame,(cx,cy),6,(255,0,0),-1)
+
+                    cv2.putText(frame,f"ID {int(track_id)}",(x1,y1-10),
+                                cv2.FONT_HERSHEY_SIMPLEX,0.6,(0,255,0),2)
+
+                    if track_id in previous_positions:
+
+                        prev_y = previous_positions[track_id]
+
+                        # entering
+                        if prev_y < LINE_Y and cy >= LINE_Y:
+
+                            if track_id not in crossed_ids:
+
+                                print("Person entering")
+
+                                speak("Swagatham dukananiki swagatham")
+
+                                crossed_ids[track_id] = "in"
+
+                        # leaving
+                        elif prev_y > LINE_Y and cy <= LINE_Y:
+
+                            if track_id not in crossed_ids:
+
+                                print("Person leaving")
+
+                                speak("Dhanyavadalu malli randi")
+
+                                crossed_ids[track_id] = "out"
+
+                    previous_positions[track_id] = cy
+
+        cv2.imshow("AI Store Camera",frame)
+
+        key = cv2.waitKey(1) & 0xFF
+
+        if key == ord("w"):
+            LINE_Y -= 10
+
+        elif key == ord("s"):
+            LINE_Y += 10
+
+        elif key == ord("q"):
             break
 
     cap.release()
