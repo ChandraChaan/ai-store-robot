@@ -1,6 +1,7 @@
 import cv2
 from ultralytics import YOLO
 from voice.text_to_speech import speak
+from ai.conversation_engine import start_conversation
 
 def start_camera():
 
@@ -74,7 +75,7 @@ def start_camera():
                                 print("Person entering")
 
                                 speak("Swagatham dukananiki swagatham")
-
+                                start_conversation()
                                 crossed_ids[track_id] = "in"
 
                         # leaving
