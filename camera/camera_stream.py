@@ -1,7 +1,11 @@
 import cv2
+import threading
 from ultralytics import YOLO
+import time
 from voice.text_to_speech import speak
 from ai.conversation_engine import start_conversation
+from utils import config
+
 
 def start_camera():
 
@@ -9,10 +13,8 @@ def start_camera():
 
     cap = cv2.VideoCapture("http://192.168.43.196:4747/video")
 
-    previous_positions = {}
-    crossed_ids = {}
-
-    LINE_Y = 450
+    previous_area = None
+    last_event = None
 
     while True:
 
@@ -21,87 +23,88 @@ def start_camera():
             print("Camera not working")
             break
 
+        # rotate for phone camera
         frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
-        height, width = frame.shape[:2]
+        # improve brightness balance
+        frame = cv2.convertScaleAbs(frame, alpha=1.2, beta=20)
 
-        # draw entrance line
-        cv2.line(frame,(0,LINE_Y),(width,LINE_Y),(0,0,255),3)
-
-        results = model.track(frame, persist=True, classes=[0])
+        results = model(frame, verbose=False)
 
         if results[0].boxes is not None:
 
             boxes = results[0].boxes.xyxy.cpu().numpy()
-            ids = results[0].boxes.id
             classes = results[0].boxes.cls.cpu().numpy()
             confidences = results[0].boxes.conf.cpu().numpy()
 
-            if ids is not None:
+            for box, cls, conf in zip(boxes, classes, confidences):
 
-                ids = ids.cpu().numpy()
+                if int(cls) != 0:
+                    continue
 
-                for box, track_id, cls, conf in zip(boxes, ids, classes, confidences):
+                if conf < 0.35:
+                    continue
 
-                    if conf < 0.4:
-                        continue
+                x1, y1, x2, y2 = map(int, box)
 
-                    if int(cls) != 0:
-                        continue
+                width = x2 - x1
+                height = y2 - y1
 
-                    x1, y1, x2, y2 = map(int, box)
+                area = width * height
 
-                    cx = int((x1 + x2) / 2)
-                    cy = int((y1 + y2) / 2)
+                # draw person box
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0,255,0), 2)
 
-                    # draw box
-                    cv2.rectangle(frame,(x1,y1),(x2,y2),(0,255,0),2)
+                cv2.putText(
+                    frame,
+                    f"Person {conf:.2f}",
+                    (x1, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6,
+                    (0,255,0),
+                    2
+                )
 
-                    # draw center
-                    cv2.circle(frame,(cx,cy),6,(255,0,0),-1)
+                if previous_area is not None:
 
-                    cv2.putText(frame,f"ID {int(track_id)}",(x1,y1-10),
-                                cv2.FONT_HERSHEY_SIMPLEX,0.6,(0,255,0),2)
+                    # person coming closer
+                    if area > previous_area * 1.25:
 
-                    if track_id in previous_positions:
+                        if last_event != "enter":
 
-                        prev_y = previous_positions[track_id]
+                            print("Customer approaching")
 
-                        # entering
-                        if prev_y < LINE_Y and cy >= LINE_Y:
+                            speak("Swagatham dukananiki swagatham")
 
-                            if track_id not in crossed_ids:
+                            time.sleep(2)
 
-                                print("Person entering")
+                            config.customer_inside = True
 
-                                speak("Swagatham dukananiki swagatham")
-                                start_conversation()
-                                crossed_ids[track_id] = "in"
+                            threading.Thread(
+                                target=start_conversation,
+                                daemon=True
+                            ).start()
 
-                        # leaving
-                        elif prev_y > LINE_Y and cy <= LINE_Y:
+                            last_event = "enter"
 
-                            if track_id not in crossed_ids:
+                    # person moving away
+                    elif area < previous_area * 0.75:
 
-                                print("Person leaving")
+                        if last_event != "leave":
 
-                                speak("Dhanyavadalu malli randi")
+                            print("Customer leaving")
 
-                                crossed_ids[track_id] = "out"
+                            config.customer_inside = False
 
-                    previous_positions[track_id] = cy
+                            speak("Dhanyavadalu malli randi")
 
-        cv2.imshow("AI Store Camera",frame)
+                            last_event = "leave"
 
-        key = cv2.waitKey(1) & 0xFF
+                previous_area = area
 
-        if key == ord("w"):
-            LINE_Y -= 10
+        cv2.imshow("AI Store Camera", frame)
 
-        elif key == ord("s"):
-            LINE_Y += 10
-
-        elif key == ord("q"):
+        if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
     cap.release()
