@@ -22,3 +22,11 @@ env/
 *.egg-info/
 dist/
 build/
+# Store data created at runtime
+data/store.db
+data/store.db-journal
+data/visits/
+data/*.tmp
+config.json
+*.aiff
+*.mp3
