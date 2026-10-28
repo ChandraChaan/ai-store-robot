@@ -16,7 +16,7 @@ if command -v ollama >/dev/null 2>&1; then
     (ollama serve >/tmp/ollama.log 2>&1 &)
     sleep 2
   fi
-  if ! ollama list 2>/dev/null | grep -q "qwen3:4b-instruct"; then
+  if ! curl -s localhost:11434/api/tags | grep -q "qwen3:4b-instruct"; then
     echo "Downloading the local language model (one time, ~2.5 GB)..."
     ollama pull qwen3:4b-instruct || true
   fi

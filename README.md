@@ -22,6 +22,7 @@ running cost**: no cloud APIs, no keys, no subscriptions.
 
 ```bash
 ./run.sh --text            # talk to the robot by typing, no camera or mic needed
+./run.sh --voice           # microphone + speaker only, no camera
 ./run.sh                   # camera + microphone (settings from config.json / env)
 ./run.sh --source 0        # use the Mac webcam
 ./run.sh --source http://192.168.43.196:4747/video --rotate 90    # phone camera (DroidCam)

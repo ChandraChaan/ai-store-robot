@@ -5,6 +5,7 @@
   python main.py --source 0           use the Mac webcam
   python main.py --source http://192.168.1.5:4747/video --rotate 90   phone camera (DroidCam / IP Webcam)
   python main.py --text               no camera or mic: chat with the robot by typing (great for testing)
+  python main.py --voice              microphone + speaker only, no camera (press Enter for the next customer)
   python main.py --no-window          headless (e.g. over SSH); watch the dashboard instead
 """
 from __future__ import annotations
@@ -27,6 +28,7 @@ def parse_args(argv=None) -> argparse.Namespace:
     ap.add_argument("--source", help="camera index (0) or stream URL")
     ap.add_argument("--rotate", type=int, choices=[0, 90, 180, 270])
     ap.add_argument("--text", action="store_true", help="text chat mode, no camera / microphone")
+    ap.add_argument("--voice", action="store_true", help="voice conversation without a camera (test mic + speaker)")
     ap.add_argument("--no-window", action="store_true", help="do not open the OpenCV window")
     ap.add_argument("--no-llm", action="store_true", help="rule-based understanding only (skip Ollama)")
     ap.add_argument("--no-voice", action="store_true", help="print replies instead of speaking")
@@ -128,6 +130,36 @@ def run_text_mode(settings: Settings) -> int:
         speaker.shutdown()
         if dashboard:
             dashboard.shutdown()
+    return 0
+
+
+def run_voice_mode(settings: Settings) -> int:
+    """Microphone + speaker, no camera: each Enter press is a customer arriving."""
+    inventory, ledger, robot, speaker, listener, store, brain, engine = build(settings)
+    dashboard = start_dashboard_if_enabled(settings, inventory, ledger, store, robot)
+    if listener.backend in ("typed", "none"):
+        print(f"Voice mode needs a speech backend, but the listener is '{listener.backend}'. "
+              "Install faster-whisper and sounddevice, or use --text.")
+        return 1
+    listener.warm_up()
+    if brain.llm_ready:
+        brain.ollama.warm_up()
+    print("\nVoice mode. Speak after the greeting; say 'antey' / 'bye' to finish. Ctrl+C to quit.\n")
+    try:
+        while True:
+            input("Press Enter when a customer arrives... ")
+            engine.start()
+            engine.join(timeout=3600)
+            print("--- conversation over ---\n")
+    except (EOFError, KeyboardInterrupt):
+        pass
+    finally:
+        engine.stop(farewell=False)
+        engine.join(3)
+        speaker.shutdown()
+        if dashboard:
+            dashboard.shutdown()
+        ledger.close()
     return 0
 
 
@@ -253,6 +285,8 @@ def main(argv=None) -> int:
     print(f"Starting {settings.store_name} robot")
     if args.text:
         return run_text_mode(settings)
+    if args.voice:
+        return run_voice_mode(settings)
     return run_camera_mode(settings)
 
 
