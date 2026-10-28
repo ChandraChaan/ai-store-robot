@@ -19,9 +19,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from store.inventory import Inventory  # noqa: E402
-from store.ledger import Ledger  # noqa: E402
-from utils.config import load_settings  # noqa: E402
+from shop.inventory import Inventory  # noqa: E402
+from shop.ledger import Ledger  # noqa: E402
+from core.config import load_settings  # noqa: E402
 
 
 def main(argv=None) -> int:

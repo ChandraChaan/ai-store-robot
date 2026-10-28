@@ -5,7 +5,9 @@ ultralytics            # YOLOv8 person detection (pulls torch)
 faster-whisper         # offline speech to text (CTranslate2)
 sounddevice            # microphone capture (brew install portaudio on macOS)
 scipy
-pyserial               # Arduino robot over USB
+pyserial               # Arduino robot over USB (future/robot)
+timm                   # DINOv2 embeddings for counter product recognition
+segno                  # UPI QR codes (pure python)
 
 # Optional
 edge-tts               # nicer neural Telugu/Hindi voices (needs internet). Default is macOS 'say' (offline).

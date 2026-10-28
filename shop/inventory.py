@@ -40,6 +40,7 @@ class Inventory:
         self._lock = threading.RLock()
         self.products: dict[str, Product] = {}
         self.shelves: dict[str, dict] = {}
+        self.on_change = None   # callback(key, delta, new_stock)
         self.load()
 
     # ---- persistence ----
@@ -128,17 +129,19 @@ class Inventory:
 
     # ---- stock changes ----
     def reduce_stock(self, key: str, qty: float) -> None:
-        with self._lock:
-            product = self.products[key]
-            product.stock = max(0.0, product.stock - qty)
-            self.save()
+        self.add_stock(key, -qty)
 
     def add_stock(self, key: str, qty: float) -> Product:
         with self._lock:
             product = self.products[key]
             product.stock = max(0.0, product.stock + qty)
             self.save()
-            return product
+        if self.on_change:
+            try:
+                self.on_change(key, qty, product.stock)
+            except Exception:
+                pass
+        return product
 
     def set_price(self, key: str, price: float) -> Product:
         with self._lock:

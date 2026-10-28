@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="te">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counter Screen</title>
+<style>
+  :root { --bg:#0f1a14; --ink:#f4f1e8; --muted:#9fb3a7; --accent:#6fe3a0; --warn:#ffb067; --card:#17261e; }
+  html, body { height:100%; margin:0; }
+  body { background:var(--bg); color:var(--ink); font-family:-apple-system, system-ui, "Noto Sans Telugu", sans-serif; display:flex; flex-direction:column; }
+  header { display:flex; justify-content:space-between; align-items:center; padding:14px 24px; color:var(--muted); font-size:18px; }
+  main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px 24px; text-align:center; }
+  .msg { font-size:clamp(28px, 5vw, 56px); line-height:1.25; max-width:22ch; }
+  .sub { font-size:clamp(18px, 2.6vw, 28px); color:var(--muted); margin-top:12px; }
+  .bill { width:min(720px, 100%); background:var(--card); border-radius:18px; padding:14px 22px; margin-top:22px; font-size:clamp(20px, 3vw, 30px); }
+  .bill div { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #243a2e; }
+  .bill div:last-child { border:0; font-weight:700; color:var(--accent); font-size:1.15em; }
+  .pay { display:flex; gap:30px; align-items:center; margin-top:18px; flex-wrap:wrap; justify-content:center; }
+  .qr { background:#fff; padding:14px; border-radius:16px; width:min(44vh, 320px); }
+  .qr svg { width:100%; height:auto; display:block; }
+  .amount { font-size:clamp(44px, 8vw, 96px); font-weight:800; color:var(--accent); }
+  .paid { color:var(--accent); } .warn { color:var(--warn); }
+  footer { padding:10px 24px; color:var(--muted); font-size:14px; text-align:center; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--accent); margin-right:8px; }
+</style>
+</head>
+<body>
+<header><span id="store">Store</span><span><span class="dot" id="dot"></span><span id="clock"></span></span></header>
+<main id="main"><div class="msg">…</div></main>
+<footer id="foot"></footer>
+<script>
+const $ = s => document.querySelector(s);
+const rs = v => '₹' + (Math.round(v*100)/100);
+let lastState = '';
+function render(s) {
+  $('#store').textContent = s.store_name;
+  $('#clock').textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  const lines = (s.lines||[]).map(l => `<div><span>${l.qty}× ${l.name}</span><span>${rs(l.total)}</span></div>`).join('');
+  const bill = s.lines && s.lines.length ? `<div class="bill">${lines}<div><span>మొత్తం / Total</span><span>${rs(s.total)}</span></div></div>` : '';
+  let html = `<div class="msg">${s.message_te||''}</div><div class="sub">${s.message_en||''}</div>`;
+  if (s.state === 'pay') {
+    const qr = s.qr_svg ? `<div class="qr">${s.qr_svg}</div>` : '';
+    html += bill + `<div class="pay">${qr}<div><div class="amount">${rs(s.total)}</div><div class="sub">${s.upi_id ? 'UPI: ' + s.upi_id : ''}</div></div></div>`;
+  } else if (s.state === 'paid' || s.state === 'khata') {
+    html = `<div class="msg paid">✓ ${s.message_te||''}</div><div class="sub">${s.message_en||''}</div>` + bill;
+  } else if (s.state === 'bill' || s.state === 'shopping') {
+    html += bill;
+  } else if (s.state === 'unpaid') {
+    html = `<div class="msg warn">${s.message_te||''}</div><div class="sub">${s.message_en||''}</div>` + bill;
+  }
+  $('#main').innerHTML = html;
+  $('#foot').textContent = s.footer || '';
+}
+async function tick() {
+  try {
+    const s = await (await fetch('/api/screen')).json();
+    $('#dot').style.background = 'var(--accent)';
+    render(s);
+  } catch (e) { $('#dot').style.background = 'var(--warn)'; }
+}
+tick(); setInterval(tick, 1000);
+document.addEventListener('dblclick', () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(()=>{}); });
+</script>
+</body>
+</html>

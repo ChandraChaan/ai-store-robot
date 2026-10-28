@@ -1,6 +1,6 @@
 import pytest
 
-from ai import nlu
+from brain import nlu
 
 
 def items(parsed):

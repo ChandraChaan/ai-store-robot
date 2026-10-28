@@ -9,11 +9,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from store.inventory import Inventory, Product, normalize
+from shop.inventory import Inventory, Product, normalize
 
 INTENTS = {
     "greeting", "goodbye", "thanks", "done", "affirm", "deny",
-    "ask_price", "ask_stock", "buy", "credit", "pay_credit", "check_balance",
+    "ask_price", "ask_stock", "buy", "remove", "credit", "pay_credit", "check_balance",
     "list_products", "my_name", "chitchat", "unknown",
 }
 
@@ -233,6 +233,16 @@ def bare_name(text: str, inventory: Inventory | None = None) -> str | None:
 
 
 # ---------------------------------------------------------------- main entry
+def mentions_cash(text: str) -> bool:
+    norm = normalize(text)
+    return any(_contains(norm, w) for w in CASH_WORDS)
+
+
+def mentions_upi(text: str) -> bool:
+    norm = normalize(text)
+    return any(_contains(norm, w) for w in ("upi", "qr", "scan", "స్కాన్", "phonepe", "gpay", "google pay", "paytm", "online", "ఆన్లైన్", "కట్టేశాను", "kattesanu", "chellinchanu", "చెల్లించాను", "paid", "done payment", "payment chesanu", "పేమెంట్"))
+
+
 def parse(text: str, inventory: Inventory) -> ParsedIntent:
     norm = normalize(text)
     result = ParsedIntent(text=text)
@@ -254,6 +264,10 @@ def parse(text: str, inventory: Inventory) -> ParsedIntent:
         result.amount = leftover[-1][0]
 
     if result.items:
+        if scores["deny"] and not scores["buy"] and not scores["credit"]:
+            result.intent = "remove"            # "coke vaddu" = take the coke off the bill
+            result.confidence = 0.9
+            return result
         for intent in ("pay_credit", "check_balance", "credit", "ask_price", "ask_stock", "buy"):
             if scores[intent]:
                 result.intent = intent

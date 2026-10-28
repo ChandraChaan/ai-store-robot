@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import time
 
 SAY_VOICES = {"te": "Geeta", "hi": "Lekha", "en": "Rishi", "ta": "Vani", "kn": "Soumya"}
 EDGE_VOICES = {"te": "te-IN-ShrutiNeural", "hi": "hi-IN-SwaraNeural", "en": "en-IN-NeerjaNeural"}
@@ -34,6 +35,8 @@ class Speaker:
         self._idle = threading.Event()
         self._idle.set()
         self._stop_all = threading.Event()
+        self.last_speech_start = 0.0
+        self.last_speech_end = 0.0
         self.on_speak = None  # optional callback(text) for logging/dashboard
         self._thread = threading.Thread(target=self._worker, name="speaker", daemon=True)
         self._thread.start()
@@ -81,6 +84,9 @@ class Speaker:
     def wait(self, timeout: float | None = None) -> None:
         self._idle.wait(timeout)
 
+    def spoke_since(self, when: float) -> bool:
+        return self._speaking.is_set() or self.last_speech_end >= when
+
     def stop(self) -> None:
         """Interrupt current speech and drop anything queued."""
         try:
@@ -109,6 +115,7 @@ class Speaker:
                 break
             text, lang, done = item
             self._speaking.set()
+            self.last_speech_start = time.time()
             try:
                 if self.on_speak:
                     try:
@@ -119,6 +126,7 @@ class Speaker:
             except Exception as exc:
                 print("Speech error:", exc)
             finally:
+                self.last_speech_end = time.time()
                 self._speaking.clear()
                 done.set()
                 if self._queue.empty():

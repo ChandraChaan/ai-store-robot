@@ -164,9 +164,12 @@ class Listener:
                 return sys.stdin.readline().strip()
             except (EOFError, KeyboardInterrupt):
                 return ""
+        started = time.time()
         audio = self.record()
         if audio is None:
             return ""
+        if self.speaker is not None and self.speaker.spoke_since(started):
+            return ""   # the robot talked while we were recording (e.g. counter bill); don't transcribe ourselves
         text = self.transcribe(audio)
         if text:
             print(f"  (heard {self.last_audio_seconds:.1f}s, transcribed in {self.last_transcribe_seconds:.1f}s)")

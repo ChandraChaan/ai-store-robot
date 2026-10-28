@@ -7,8 +7,8 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from store.inventory import Inventory  # noqa: E402
-from store.ledger import Ledger  # noqa: E402
+from shop.inventory import Inventory  # noqa: E402
+from shop.ledger import Ledger  # noqa: E402
 
 
 @pytest.fixture
