@@ -1,0 +1,12 @@
+# Core (vision + voice). Python 3.10+; tested with 3.14 on Apple Silicon.
+numpy
+opencv-python
+ultralytics            # YOLOv8 person detection (pulls torch)
+faster-whisper         # offline speech to text (CTranslate2)
+sounddevice            # microphone capture (brew install portaudio on macOS)
+scipy
+pyserial               # Arduino robot over USB
+
+# Optional
+edge-tts               # nicer neural Telugu/Hindi voices (needs internet). Default is macOS 'say' (offline).
+pytest                 # tests

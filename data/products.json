@@ -1,0 +1,363 @@
+{
+  "shelves": {
+    "A1": {
+      "route": [
+        "F 1200",
+        "L 600",
+        "F 400"
+      ]
+    },
+    "A2": {
+      "route": [
+        "F 1200",
+        "L 600",
+        "F 900"
+      ]
+    },
+    "B1": {
+      "route": [
+        "F 1200",
+        "R 600",
+        "F 400"
+      ]
+    },
+    "B2": {
+      "route": [
+        "F 1200",
+        "R 600",
+        "F 900"
+      ]
+    },
+    "C1": {
+      "route": [
+        "F 2400"
+      ]
+    }
+  },
+  "products": [
+    {
+      "key": "coke",
+      "name": "Coca-Cola",
+      "unit": "bottle",
+      "price": 40.0,
+      "stock": 10,
+      "shelf": "A1",
+      "low_stock": 3.0,
+      "aliases": [
+        "coke",
+        "coca cola",
+        "cola",
+        "కోక్",
+        "కోకా కోలా",
+        "कोक"
+      ]
+    },
+    {
+      "key": "sprite",
+      "name": "Sprite",
+      "unit": "bottle",
+      "price": 40.0,
+      "stock": 6,
+      "shelf": "A1",
+      "low_stock": 3.0,
+      "aliases": [
+        "sprite",
+        "స్ప్రైట్",
+        "स्प्राइट"
+      ]
+    },
+    {
+      "key": "thums_up",
+      "name": "Thums Up",
+      "unit": "bottle",
+      "price": 40.0,
+      "stock": 0,
+      "shelf": "A1",
+      "low_stock": 3.0,
+      "aliases": [
+        "thums up",
+        "thumbs up",
+        "thumsup",
+        "థమ్స్ అప్",
+        "తమ్స్ అప్",
+        "थम्स अप"
+      ]
+    },
+    {
+      "key": "water",
+      "name": "Water bottle",
+      "unit": "bottle",
+      "price": 20.0,
+      "stock": 24,
+      "shelf": "A2",
+      "low_stock": 6.0,
+      "aliases": [
+        "water",
+        "water bottle",
+        "neellu",
+        "neelu",
+        "manchi neellu",
+        "నీళ్లు",
+        "నీళ్ళు",
+        "వాటర్",
+        "पानी",
+        "paani",
+        "pani"
+      ]
+    },
+    {
+      "key": "chips",
+      "name": "Lays chips",
+      "unit": "packet",
+      "price": 20.0,
+      "stock": 15,
+      "shelf": "B1",
+      "low_stock": 5.0,
+      "aliases": [
+        "chips",
+        "lays",
+        "lay's",
+        "చిప్స్",
+        "లేస్",
+        "चिप्स"
+      ]
+    },
+    {
+      "key": "biscuit",
+      "name": "Parle-G biscuit",
+      "unit": "packet",
+      "price": 10.0,
+      "stock": 30,
+      "shelf": "B1",
+      "low_stock": 5.0,
+      "aliases": [
+        "biscuit",
+        "biscuits",
+        "parle",
+        "parle g",
+        "parle g",
+        "బిస్కెట్",
+        "బిస్కెట్లు",
+        "పార్లే",
+        "बिस्किट",
+        "पारले"
+      ]
+    },
+    {
+      "key": "maggi",
+      "name": "Maggi noodles",
+      "unit": "packet",
+      "price": 14.0,
+      "stock": 12,
+      "shelf": "B2",
+      "low_stock": 4.0,
+      "aliases": [
+        "maggi",
+        "noodles",
+        "మ్యాగీ",
+        "మాగీ",
+        "నూడుల్స్",
+        "मैगी"
+      ]
+    },
+    {
+      "key": "rice",
+      "name": "Rice",
+      "unit": "kg",
+      "price": 60.0,
+      "stock": 20,
+      "shelf": "C1",
+      "low_stock": 5.0,
+      "aliases": [
+        "rice",
+        "biyyam",
+        "biyam",
+        "బియ్యం",
+        "బియ్యము",
+        "chawal",
+        "चावल"
+      ]
+    },
+    {
+      "key": "sugar",
+      "name": "Sugar",
+      "unit": "kg",
+      "price": 45.0,
+      "stock": 8,
+      "shelf": "C1",
+      "low_stock": 3.0,
+      "aliases": [
+        "sugar",
+        "chakkera",
+        "chekkara",
+        "panchadara",
+        "చక్కెర",
+        "పంచదార",
+        "షుగర్",
+        "cheeni",
+        "chini",
+        "चीनी",
+        "शक्कर"
+      ]
+    },
+    {
+      "key": "dal",
+      "name": "Toor dal",
+      "unit": "kg",
+      "price": 120.0,
+      "stock": 10,
+      "shelf": "C1",
+      "low_stock": 3.0,
+      "aliases": [
+        "dal",
+        "pappu",
+        "kandipappu",
+        "toor dal",
+        "పప్పు",
+        "కందిపప్పు",
+        "दाल"
+      ]
+    },
+    {
+      "key": "oil",
+      "name": "Cooking oil",
+      "unit": "litre",
+      "price": 150.0,
+      "stock": 6,
+      "shelf": "C1",
+      "low_stock": 2.0,
+      "aliases": [
+        "oil",
+        "noone",
+        "nune",
+        "నూనె",
+        "ఆయిల్",
+        "tel",
+        "तेल"
+      ]
+    },
+    {
+      "key": "salt",
+      "name": "Salt",
+      "unit": "packet",
+      "price": 20.0,
+      "stock": 10,
+      "shelf": "C1",
+      "low_stock": 3.0,
+      "aliases": [
+        "salt",
+        "uppu",
+        "ఉప్పు",
+        "namak",
+        "नमक"
+      ]
+    },
+    {
+      "key": "soap",
+      "name": "Bath soap",
+      "unit": "piece",
+      "price": 30.0,
+      "stock": 10,
+      "shelf": "B2",
+      "low_stock": 3.0,
+      "aliases": [
+        "soap",
+        "sabbu",
+        "సబ్బు",
+        "सोप",
+        "साबुन",
+        "sabun"
+      ]
+    },
+    {
+      "key": "shampoo",
+      "name": "Shampoo sachet",
+      "unit": "sachet",
+      "price": 2.0,
+      "stock": 50,
+      "shelf": "B2",
+      "low_stock": 10.0,
+      "aliases": [
+        "shampoo",
+        "షాంపూ",
+        "शैम्पू"
+      ]
+    },
+    {
+      "key": "tea",
+      "name": "Tea powder",
+      "unit": "packet",
+      "price": 50.0,
+      "stock": 7,
+      "shelf": "C1",
+      "low_stock": 2.0,
+      "aliases": [
+        "tea",
+        "tea powder",
+        "chai",
+        "chai patti",
+        "టీ",
+        "టీ పొడి",
+        "చాయ్",
+        "चाय"
+      ]
+    },
+    {
+      "key": "milk",
+      "name": "Milk packet",
+      "unit": "packet",
+      "price": 28.0,
+      "stock": 10,
+      "shelf": "A2",
+      "low_stock": 3.0,
+      "aliases": [
+        "milk",
+        "paalu",
+        "palu",
+        "పాలు",
+        "doodh",
+        "दूध"
+      ]
+    },
+    {
+      "key": "eggs",
+      "name": "Eggs",
+      "unit": "piece",
+      "price": 7.0,
+      "stock": 30,
+      "shelf": "A2",
+      "low_stock": 6.0,
+      "aliases": [
+        "egg",
+        "eggs",
+        "guddu",
+        "gudlu",
+        "kodi guddu",
+        "గుడ్డు",
+        "గుడ్లు",
+        "कोडि गुड्डु",
+        "anda",
+        "ande",
+        "अंडा",
+        "अंडे"
+      ]
+    },
+    {
+      "key": "matches",
+      "name": "Match box",
+      "unit": "box",
+      "price": 2.0,
+      "stock": 20,
+      "shelf": "B2",
+      "low_stock": 5.0,
+      "aliases": [
+        "match box",
+        "matchbox",
+        "matches",
+        "agipetti",
+        "అగ్గిపెట్టె",
+        "माचिस"
+      ]
+    }
+  ]
+}
