@@ -1,5 +1,5 @@
-from vision.person_detection import Detection
-from vision.presence import PresenceEvent, PresenceTracker
+from perception.person import Detection
+from perception.presence import PresenceEvent, PresenceTracker
 
 SHAPE = (480, 640, 3)
 BIG = [Detection(100, 50, 400, 450, 0.9)]     # ~39% of frame: at the counter

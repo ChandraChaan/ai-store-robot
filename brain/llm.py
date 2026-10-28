@@ -10,9 +10,9 @@ import time
 import urllib.error
 import urllib.request
 
-from ai import nlu
-from ai.nlu import INTENTS, Item, ParsedIntent
-from store.inventory import Inventory
+from brain import nlu
+from brain.nlu import INTENTS, Item, ParsedIntent
+from shop.inventory import Inventory
 
 SYSTEM_PROMPT = """You are the brain of a small Indian village kirana (general) store robot.
 Customers speak Telugu (script or Latin letters / "Tenglish"), Hindi or English, often mixed.
@@ -191,7 +191,7 @@ class Brain:
 
 def ask_ai(text: str) -> str:
     """Backwards compatible one-shot helper (used by the very first prototype)."""
-    from utils.config import load_settings
+    from core.config import load_settings
 
     settings = load_settings()
     inventory = Inventory(settings.products_file)

@@ -1,6 +1,7 @@
 """Khata (credit ledger) and sales log in SQLite. Zero infrastructure, one file."""
 from __future__ import annotations
 
+import json
 import sqlite3
 import threading
 import time
@@ -25,6 +26,19 @@ CREATE TABLE IF NOT EXISTS transactions (
 );
 CREATE INDEX IF NOT EXISTS idx_tx_created ON transactions(created_at);
 CREATE INDEX IF NOT EXISTS idx_tx_customer ON transactions(customer_id);
+CREATE TABLE IF NOT EXISTS bills (
+    id INTEGER PRIMARY KEY,
+    created_at REAL NOT NULL,
+    visit_id TEXT,
+    customer_id INTEGER,
+    total REAL NOT NULL,
+    status TEXT NOT NULL,             -- pending | paid | khata | unpaid | cancelled
+    method TEXT,                      -- upi | cash | khata
+    ref TEXT,
+    items TEXT NOT NULL,              -- JSON [[product_key, qty, amount], ...]
+    settled_at REAL,
+    FOREIGN KEY(customer_id) REFERENCES customers(id)
+);
 """
 
 
@@ -37,6 +51,9 @@ class Ledger:
         self._conn.row_factory = sqlite3.Row
         with self._lock:
             self._conn.executescript(SCHEMA)
+            cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(transactions)")}
+            if "bill_id" not in cols:
+                self._conn.execute("ALTER TABLE transactions ADD COLUMN bill_id INTEGER")
             self._conn.commit()
 
     def close(self) -> None:
@@ -66,32 +83,95 @@ class Ledger:
             return [r["name"] for r in self._conn.execute("SELECT name FROM customers ORDER BY name")]
 
     # ---- transactions ----
-    def record_sale(self, items: list[tuple[str, float, float]], note: str = "") -> float:
-        """items: [(product_key, qty, line_total)] paid in cash. Returns bill total."""
+    def record_sale(self, items: list[tuple[str, float, float]], note: str = "", bill_id: int | None = None) -> float:
+        """items: [(product_key, qty, line_total)] paid now (cash/UPI). Returns bill total."""
         total = 0.0
         with self._lock:
             now = time.time()
             for key, qty, amount in items:
                 self._conn.execute(
-                    "INSERT INTO transactions(created_at, kind, customer_id, product_key, qty, amount, note) VALUES (?,?,?,?,?,?,?)",
-                    (now, "sale", None, key, qty, amount, note),
+                    "INSERT INTO transactions(created_at, kind, customer_id, product_key, qty, amount, note, bill_id) VALUES (?,?,?,?,?,?,?,?)",
+                    (now, "sale", None, key, qty, amount, note, bill_id),
                 )
                 total += amount
             self._conn.commit()
         return total
 
-    def add_credit(self, customer_name: str, items: list[tuple[str, float, float]], note: str = "") -> float:
+    def add_credit(self, customer_name: str, items: list[tuple[str, float, float]], note: str = "", bill_id: int | None = None) -> float:
         """Sell on khata: customer owes the total. Returns new balance."""
         with self._lock:
             customer_id = self.get_or_create_customer(customer_name)
             now = time.time()
             for key, qty, amount in items:
                 self._conn.execute(
-                    "INSERT INTO transactions(created_at, kind, customer_id, product_key, qty, amount, note) VALUES (?,?,?,?,?,?,?)",
-                    (now, "credit", customer_id, key, qty, amount, note),
+                    "INSERT INTO transactions(created_at, kind, customer_id, product_key, qty, amount, note, bill_id) VALUES (?,?,?,?,?,?,?,?)",
+                    (now, "credit", customer_id, key, qty, amount, note, bill_id),
                 )
             self._conn.commit()
             return self.balance(customer_name)
+
+    # ---- bills ----
+    def create_bill(self, items: list[tuple[str, float, float]], visit_id: str = "", customer_name: str | None = None) -> int:
+        with self._lock:
+            customer_id = self.get_or_create_customer(customer_name) if customer_name else None
+            total = round(sum(a for _, _, a in items), 2)
+            cur = self._conn.execute(
+                "INSERT INTO bills(created_at, visit_id, customer_id, total, status, items) VALUES (?,?,?,?,?,?)",
+                (time.time(), visit_id, customer_id, total, "pending", json.dumps(items)),
+            )
+            self._conn.commit()
+            return int(cur.lastrowid)
+
+    def settle_bill(self, bill_id: int, status: str, method: str | None = None, ref: str = "", customer_name: str | None = None) -> dict:
+        """Mark a bill paid/khata/unpaid/cancelled and write the matching ledger lines."""
+        bill = self.get_bill(bill_id)
+        if bill is None:
+            raise ValueError(f"no bill {bill_id}")
+        if bill["status"] != "pending":
+            return bill
+        items = [tuple(x) for x in bill["items"]]
+        if status == "khata":
+            if not customer_name:
+                raise ValueError("khata needs a customer name")
+            self.add_credit(customer_name, items, note=f"bill {bill_id}", bill_id=bill_id)
+        elif status in ("paid", "unpaid"):
+            self.record_sale(items, note=f"bill {bill_id} {status} {method or ''}".strip(), bill_id=bill_id)
+        with self._lock:
+            customer_id = self.get_or_create_customer(customer_name) if customer_name else bill.get("customer_id")
+            self._conn.execute(
+                "UPDATE bills SET status=?, method=?, ref=?, settled_at=?, customer_id=? WHERE id=?",
+                (status, method, ref, time.time(), customer_id, bill_id),
+            )
+            self._conn.commit()
+        return self.get_bill(bill_id)
+
+    def get_bill(self, bill_id: int) -> dict | None:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT b.*, c.name AS customer FROM bills b LEFT JOIN customers c ON c.id = b.customer_id WHERE b.id = ?", (bill_id,)
+            ).fetchone()
+        if row is None:
+            return None
+        d = dict(row)
+        d["items"] = json.loads(d["items"])
+        return d
+
+    def bills(self, limit: int = 30, status: str | None = None) -> list[dict]:
+        with self._lock:
+            sql = "SELECT b.*, c.name AS customer FROM bills b LEFT JOIN customers c ON c.id = b.customer_id"
+            args: list = []
+            if status:
+                sql += " WHERE b.status = ?"
+                args.append(status)
+            sql += " ORDER BY b.id DESC LIMIT ?"
+            args.append(limit)
+            rows = self._conn.execute(sql, args).fetchall()
+        out = []
+        for r in rows:
+            d = dict(r)
+            d["items"] = json.loads(d["items"])
+            out.append(d)
+        return out
 
     def record_payment(self, customer_name: str, amount: float, note: str = "") -> float:
         """Customer pays back part/all of their khata. Returns new balance."""
@@ -146,6 +226,13 @@ class Ledger:
             elif r["kind"] == "payment":
                 out["payments"] = round(float(r["total"]), 2)
         out["total_outstanding"] = round(sum(b["balance"] for b in self.all_balances()), 2)
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT COUNT(*) AS n, COALESCE(SUM(CASE WHEN status='unpaid' THEN total ELSE 0 END),0) AS unpaid FROM bills WHERE created_at >= ?",
+                (since,),
+            ).fetchone()
+        out["bills"] = int(row["n"])
+        out["unpaid"] = round(float(row["unpaid"]), 2)
         return out
 
     def recent(self, limit: int = 30) -> list[dict]:

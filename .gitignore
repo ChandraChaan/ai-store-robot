@@ -26,6 +26,8 @@ build/
 data/store.db
 data/store.db-journal
 data/visits/
+data/learned/
+data/outbox.jsonl
 data/*.tmp
 config.json
 *.aiff
